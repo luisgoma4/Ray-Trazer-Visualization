@@ -16,11 +16,29 @@ class RayTracerVisualization {
     
     async loadData() {
         try {
-            const response = await fetch('ray_data.json');
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+            // Load both ray data and medium data concurrently
+            const [rayResponse, mediumResponse] = await Promise.all([
+                fetch('ray_data.json'),
+                fetch('medium_data.json')
+            ]);
+            
+            if (!rayResponse.ok) {
+                throw new Error(`HTTP error loading ray data! status: ${rayResponse.status}`);
             }
-            this.data = await response.json();
+            if (!mediumResponse.ok) {
+                throw new Error(`HTTP error loading medium data! status: ${mediumResponse.status}`);
+            }
+            
+            const rayData = await rayResponse.json();
+            const mediumData = await mediumResponse.json();
+            
+            // Merge the data to maintain compatibility with existing code
+            this.data = {
+                ...rayData,
+                parameters: mediumData.parameters,
+                medium: mediumData.medium
+            };
+            
             this.updateInfoPanels();
             this.setupCanvas();
             this.draw();
@@ -46,12 +64,26 @@ class RayTracerVisualization {
             this.draw();
         });
         
-        // Control de zoom
+        // Control de zoom (slider) anclado al centro del canvas
         const zoomSlider = document.getElementById('zoomLevel');
-        zoomSlider.addEventListener('input', (e) => {
-            this.scale = parseFloat(e.target.value);
-            document.getElementById('zoomValue').textContent = e.target.value;
-            this.draw();
+        const zoomValue  = document.getElementById('zoomValue');
+
+        if (zoomSlider) {
+        zoomSlider.min = '1';
+        zoomSlider.max = '20';
+        zoomSlider.step = '0.1';
+        zoomSlider.value = String(this.scale);
+        }
+        if (zoomValue) {
+        zoomValue.textContent = Number(this.scale).toFixed(1);
+        }
+
+        zoomSlider?.addEventListener('input', (e) => {
+        // Ancla el zoom al punto focal: el origen del mundo (0,0)
+        const [sx, sy] = this.worldToCanvas(0, 0);
+        const used = this.zoomAt(sx, sy, parseFloat(e.target.value));
+        zoomSlider.value = String(used);
+        if (zoomValue) zoomValue.textContent = Number(used).toFixed(1);
         });
         
         // Eventos de mouse para pan
@@ -80,6 +112,35 @@ class RayTracerVisualization {
         const canvasX = this.offsetX + (x * this.scale * this.canvas.width) / (2 * this.domainSize);
         const canvasY = this.offsetY - (y * this.scale * this.canvas.height) / (2 * this.domainSize);
         return [canvasX, canvasY];
+    }
+
+    canvasToWorld(sx, sy) {
+        // Inversa de worldToCanvas, usando la escala y offsets actuales
+        const ax = (this.scale * this.canvas.width) / (2 * this.domainSize);
+        const ay = (this.scale * this.canvas.height) / (2 * this.domainSize);
+        const x = (sx - this.offsetX) / ax;
+        const y = (this.offsetY - sy) / ay;
+        return { x, y };
+    }
+
+    // Aplica zoom manteniendo fijo el punto de pantalla (sx, sy)
+    zoomAt(sx, sy, newScale) {
+        const MIN = 1;
+        const MAX = 20;
+        const clamped = Math.max(MIN, Math.min(MAX, newScale));
+
+        // Punto del mundo bajo el ancla, con la escala actual
+        const world = this.canvasToWorld(sx, sy);
+
+        // Actualiza escala (clamp) y recalcula offsets para mantener el ancla
+        this.scale = clamped;
+        const axNew = (this.scale * this.canvas.width) / (2 * this.domainSize);
+        const ayNew = (this.scale * this.canvas.height) / (2 * this.domainSize);
+        this.offsetX = sx - world.x * axNew;
+        this.offsetY = sy + world.y * ayNew;
+
+        this.draw();
+        return this.scale; // devuelve la escala efectiva usada
     }
     
     draw() {
@@ -114,7 +175,30 @@ class RayTracerVisualization {
         if (document.getElementById('showConnectionCurve').checked) {
             this.drawConnectionCurve();
         }
+        // Dibuja el punto focal (origen del mundo)
+        if (typeof this.drawFocusPoint === 'function') this.drawFocusPoint();
     }
+    // --- Punto focal en el origen del mundo (0,0) ---
+drawFocusPoint() {
+        const [cx, cy] = this.worldToCanvas(0, 0);
+        const ctx = this.ctx;
+        ctx.save();
+        ctx.fillStyle = '#ff2d55';
+        ctx.strokeStyle = '#ff2d55';
+        ctx.lineWidth = 1;
+        // círculo (radio fijo en píxeles para evitar dependencias)
+        ctx.beginPath();
+        ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+        ctx.fill();
+        // cruz opcional
+        ctx.beginPath();
+        ctx.moveTo(cx - 10, cy);
+        ctx.lineTo(cx + 10, cy);
+        ctx.moveTo(cx, cy - 10);
+        ctx.lineTo(cx, cy + 10);
+        ctx.stroke();
+        ctx.restore();
+        }
     
     drawGrid() {
         this.ctx.strokeStyle = '#f0f0f0';
@@ -284,19 +368,20 @@ class RayTracerVisualization {
         this.ctx.globalAlpha = 1.0;
     }
     
+    
     updateInfoPanels() {
         if (!this.data) return;
         
         // Parámetros de simulación
         const simParams = document.getElementById('simulationParams');
         simParams.innerHTML = `
-            <p><strong>Semilla:</strong> ${this.data.parameters.seed}</p>
-            <p><strong>Número de partículas:</strong> ${this.data.parameters.N}</p>
-            <p><strong>Tamaño del dominio:</strong> ${this.data.parameters.size}</p>
-            <p><strong>Índice de refracción:</strong> ${this.data.parameters.min_n} - ${this.data.parameters.max_n}</p>
-            <p><strong>Número total de rayos:</strong> ${this.data.parameters.num_rays}</p>
-            <p><strong>Máximo rebotes:</strong> ${this.data.parameters.max_bounces}</p>
-            <p><strong>Tiempo máximo:</strong> ${this.data.parameters.max_time}</p>
+            <p><strong>Seed:</strong> ${this.data.parameters.seed}</p>
+            <p><strong>Number of particles:</strong> ${this.data.parameters.N}</p>
+            <p><strong>Domain Size:</strong> ${this.data.parameters.size}</p>
+            <p><strong>Refractive Index:</strong> ${this.data.parameters.min_n} - ${this.data.parameters.max_n}</p>
+            <p><strong>Total Rays:</strong> ${this.data.parameters.num_rays}</p>
+            <p><strong>Max Impacts:</strong> ${this.data.parameters.max_bounces}</p>
+            <p><strong>Max Time:</strong> ${this.data.parameters.max_time}</p>
         `;
         
         // Estadísticas del medio
@@ -306,10 +391,10 @@ class RayTracerVisualization {
             const indices = this.data.medium.map(p => p.n);
             
             mediumStats.innerHTML = `
-                <p><strong>Partículas visualizadas:</strong> ${this.data.medium.length}</p>
-                <p><strong>Radio promedio:</strong> ${(radii.reduce((a, b) => a + b, 0) / radii.length).toFixed(4)}</p>
-                <p><strong>Radio mín/máx:</strong> ${Math.min(...radii).toFixed(4)} / ${Math.max(...radii).toFixed(4)}</p>
-                <p><strong>Índice promedio:</strong> ${(indices.reduce((a, b) => a + b, 0) / indices.length).toFixed(4)}</p>
+                <p><strong>Number of Particles:</strong> ${this.data.medium.length}</p>
+                <p><strong>Average Radii:</strong> ${(radii.reduce((a, b) => a + b, 0) / radii.length).toFixed(4)}</p>
+                <p><strong>Radii mín/máx:</strong> ${Math.min(...radii).toFixed(4)} / ${Math.max(...radii).toFixed(4)}</p>
+                <p><strong>Average Refractive Index:</strong> ${(indices.reduce((a, b) => a + b, 0) / indices.length).toFixed(4)}</p>
             `;
         } else {
             mediumStats.innerHTML = '<p>No hay datos del medio disponibles</p>';
@@ -318,10 +403,10 @@ class RayTracerVisualization {
         // Estadísticas de rayos
         const rayStats = document.getElementById('rayStats');
         rayStats.innerHTML = `
-            <p><strong>Rayos visualizados:</strong> ${this.data.stats.num_rays}</p>
-            <p><strong>Radio medio de salida:</strong> ${this.data.mean_radius.toFixed(4)}</p>
-            <p><strong>Puntos finales:</strong> ${this.data.endpoints.length}</p>
-            <p><strong>Proyecciones:</strong> ${this.data.projections.length}</p>
+            <p><strong>Number of ploted rays:</strong> ${this.data.stats.num_rays}</p>
+            <p><strong>Average distance to origin:</strong> ${this.data.mean_radius.toFixed(4)}</p>
+            <p><strong>Final points:</strong> ${this.data.endpoints.length}</p>
+            <p><strong>Proyections:</strong> ${this.data.projections.length}</p>
         `;
     }
     
@@ -360,15 +445,19 @@ class RayTracerVisualization {
     
     handleWheel(e) {
         e.preventDefault();
-        
-        const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-        const newScale = Math.max(0.1, Math.min(5, this.scale * zoomFactor));
-        
-        this.scale = newScale;
-        document.getElementById('zoomLevel').value = newScale;
-        document.getElementById('zoomValue').textContent = newScale.toFixed(1);
-        
-        this.draw();
+
+        const rect = this.canvas.getBoundingClientRect();
+        const sx = e.clientX - rect.left;
+        const sy = e.clientY - rect.top;
+
+        const direction = -Math.sign(e.deltaY); // rueda arriba -> acercar
+        const factor = direction >= 0 ? 1.1 : 0.9; // sensibilidad
+        const used = this.zoomAt(sx, sy, this.scale * factor);
+
+        const slider = document.getElementById('zoomLevel');
+        const label  = document.getElementById('zoomValue');
+        slider.value = String(used);
+        label.textContent = Number(used).toFixed(1);
     }
 }
 

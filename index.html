@@ -151,48 +151,48 @@
     <div class="container">
         <div class="header">
             <h1>🌊 Ray Tracer Visualization</h1>
-            <p>Visualización interactiva de trayectorias de rayos en medio aleatorio</p>
+            <p>Interactive visualization of ray trajectories in a random medium</p>
         </div>
         
         <div class="controls">
             <div class="control-group">
                 <label>
-                    <input type="checkbox" id="showRays" checked> Mostrar Rayos
+                    <input type="checkbox" id="showRays" checked> Show Rays
                 </label>
             </div>
             <div class="control-group">
                 <label>
-                    <input type="checkbox" id="showMedium" checked> Mostrar Medio
+                    <input type="checkbox" id="showMedium" checked> Show Medium
                 </label>
             </div>
             <div class="control-group">
                 <label>
-                    <input type="checkbox" id="showEndpoints" checked> Puntos Finales
+                    <input type="checkbox" id="showEndpoints" checked> Endpoints
                 </label>
             </div>
             <div class="control-group">
                 <label>
-                    <input type="checkbox" id="showProjections" checked> Proyecciones
+                    <input type="checkbox" id="showProjections" checked> Projections
                 </label>
             </div>
             <div class="control-group">
                 <label>
-                    <input type="checkbox" id="showMeanCircle" checked> Circunferencia Media
+                    <input type="checkbox" id="showMeanCircle" checked> Mean Circle
                 </label>
             </div>
             <div class="control-group">
                 <label>
-                    <input type="checkbox" id="showConnectionCurve" checked> Curva de Conexión
+                    <input type="checkbox" id="showConnectionCurve" checked> Connection Curve
                 </label>
             </div>
             <div class="control-group">
-                <label for="rayOpacity">Opacidad Rayos:</label>
+                <label for="rayOpacity">Ray Opacity:</label>
                 <input type="range" id="rayOpacity" min="0.1" max="1" step="0.1" value="0.4">
                 <span id="opacityValue">0.4</span>
             </div>
             <div class="control-group">
                 <label for="zoomLevel">Zoom:</label>
-                <input type="range" id="zoomLevel" min="0.5" max="3" step="0.1" value="1">
+                <input type="range" id="zoomLevel" min="1" max="20" step="1" value="1">
                 <span id="zoomValue">1.0</span>
             </div>
         </div>
@@ -202,23 +202,23 @@
             <div class="legend">
                 <div class="legend-item">
                     <div class="legend-color" style="background-color: rgba(0, 123, 255, 0.4);"></div>
-                    <span>Trayectorias de rayos</span>
+                    <span>Ray trajectories</span>
                 </div>
                 <div class="legend-item">
                     <div class="legend-color" style="background-color: #dc3545;"></div>
-                    <span>Puntos finales</span>
+                    <span>Endpoints</span>
                 </div>
                 <div class="legend-item">
                     <div class="legend-color" style="background-color: #007bff;"></div>
-                    <span>Proyecciones</span>
+                    <span>Projections</span>
                 </div>
                 <div class="legend-item">
                     <div class="legend-color" style="background-color: #28a745;"></div>
-                    <span>Circunferencia media</span>
+                    <span>Mean circle</span>
                 </div>
                 <div class="legend-item">
                     <div class="legend-color" style="background-color: #ff6b35;"></div>
-                    <span>Curva de conexión</span>
+                    <span>Connection curve</span>
                 </div>
             </div>
         </div>
@@ -226,21 +226,21 @@
         <div class="info-panel">
             <div class="info-grid">
                 <div class="info-card">
-                    <h3>Parámetros de Simulación</h3>
+                    <h3>Simulation Parameters</h3>
                     <div id="simulationParams">
-                        <div class="loading">Cargando datos...</div>
+                        <div class="loading">Loading data...</div>
                     </div>
                 </div>
                 <div class="info-card">
-                    <h3>Estadísticas del Medio</h3>
+                    <h3>Medium Statistics</h3>
                     <div id="mediumStats">
-                        <div class="loading">Cargando datos...</div>
+                        <div class="loading">Loading data...</div>
                     </div>
                 </div>
                 <div class="info-card">
-                    <h3>Estadísticas de Rayos</h3>
+                    <h3>Ray Statistics</h3>
                     <div id="rayStats">
-                        <div class="loading">Cargando datos...</div>
+                        <div class="loading">Loading data...</div>
                     </div>
                 </div>
             </div>
