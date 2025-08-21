@@ -10,7 +10,12 @@ class RayTracerVisualization {
         this.lastMouseX = 0;
         this.lastMouseY = 0;
         
+        // Touch support variables
+        this.touches = [];
+        this.lastTouchDistance = 0;
+        
         this.setupEventListeners();
+        this.resizeCanvas();
         this.loadData();
     }
     
@@ -94,6 +99,38 @@ class RayTracerVisualization {
         
         // Zoom con rueda del mouse
         this.canvas.addEventListener('wheel', (e) => this.handleWheel(e));
+        
+        // Touch events for mobile
+        this.canvas.addEventListener('touchstart', (e) => this.handleTouchStart(e));
+        this.canvas.addEventListener('touchmove', (e) => this.handleTouchMove(e));
+        this.canvas.addEventListener('touchend', (e) => this.handleTouchEnd(e));
+        
+        // Window resize for responsive canvas
+        window.addEventListener('resize', () => this.resizeCanvas());
+    }
+    
+    resizeCanvas() {
+        const container = this.canvas.parentElement;
+        const containerWidth = container.clientWidth;
+        const maxHeight = window.innerHeight * 0.6;
+        
+        // Make canvas square to prevent distortion
+        const canvasSize = Math.min(containerWidth, maxHeight);
+        
+        // Set canvas size (square)
+        this.canvas.width = canvasSize;
+        this.canvas.height = canvasSize;
+        
+        // Update canvas style for proper display
+        this.canvas.style.width = canvasSize + 'px';
+        this.canvas.style.height = canvasSize + 'px';
+        
+        // Recenter the view if data is loaded
+        if (this.data) {
+            this.offsetX = this.canvas.width / 2;
+            this.offsetY = this.canvas.height / 2;
+            this.draw();
+        }
     }
     
     setupCanvas() {
@@ -109,17 +146,18 @@ class RayTracerVisualization {
     }
     
     worldToCanvas(x, y) {
-        const canvasX = this.offsetX + (x * this.scale * this.canvas.width) / (2 * this.domainSize);
-        const canvasY = this.offsetY - (y * this.scale * this.canvas.height) / (2 * this.domainSize);
+        // Use canvas size (now square) for consistent scaling
+        const scale = (this.scale * this.canvas.width) / (2 * this.domainSize);
+        const canvasX = this.offsetX + x * scale;
+        const canvasY = this.offsetY - y * scale;
         return [canvasX, canvasY];
     }
 
     canvasToWorld(sx, sy) {
         // Inversa de worldToCanvas, usando la escala y offsets actuales
-        const ax = (this.scale * this.canvas.width) / (2 * this.domainSize);
-        const ay = (this.scale * this.canvas.height) / (2 * this.domainSize);
-        const x = (sx - this.offsetX) / ax;
-        const y = (this.offsetY - sy) / ay;
+        const scale = (this.scale * this.canvas.width) / (2 * this.domainSize);
+        const x = (sx - this.offsetX) / scale;
+        const y = (this.offsetY - sy) / scale;
         return { x, y };
     }
 
@@ -134,10 +172,9 @@ class RayTracerVisualization {
 
         // Actualiza escala (clamp) y recalcula offsets para mantener el ancla
         this.scale = clamped;
-        const axNew = (this.scale * this.canvas.width) / (2 * this.domainSize);
-        const ayNew = (this.scale * this.canvas.height) / (2 * this.domainSize);
-        this.offsetX = sx - world.x * axNew;
-        this.offsetY = sy + world.y * ayNew;
+        const scaleNew = (this.scale * this.canvas.width) / (2 * this.domainSize);
+        this.offsetX = sx - world.x * scaleNew;
+        this.offsetY = sy + world.y * scaleNew;
 
         this.draw();
         return this.scale; // devuelve la escala efectiva usada
@@ -458,6 +495,85 @@ drawFocusPoint() {
         const label  = document.getElementById('zoomValue');
         slider.value = String(used);
         label.textContent = Number(used).toFixed(1);
+    }
+    
+    // Touch event handlers for mobile support
+    handleTouchStart(e) {
+        e.preventDefault();
+        this.touches = Array.from(e.touches);
+        
+        if (this.touches.length === 1) {
+            // Single touch - start panning
+            this.isDragging = true;
+            this.lastMouseX = this.touches[0].clientX;
+            this.lastMouseY = this.touches[0].clientY;
+        } else if (this.touches.length === 2) {
+            // Two touches - prepare for pinch zoom
+            this.isDragging = false;
+            const dx = this.touches[0].clientX - this.touches[1].clientX;
+            const dy = this.touches[0].clientY - this.touches[1].clientY;
+            this.lastTouchDistance = Math.sqrt(dx * dx + dy * dy);
+        }
+    }
+    
+    handleTouchMove(e) {
+        e.preventDefault();
+        this.touches = Array.from(e.touches);
+        
+        if (this.touches.length === 1 && this.isDragging) {
+            // Single touch - pan
+            const deltaX = this.touches[0].clientX - this.lastMouseX;
+            const deltaY = this.touches[0].clientY - this.lastMouseY;
+            
+            this.offsetX += deltaX;
+            this.offsetY += deltaY;
+            
+            this.lastMouseX = this.touches[0].clientX;
+            this.lastMouseY = this.touches[0].clientY;
+            
+            this.draw();
+        } else if (this.touches.length === 2) {
+            // Two touches - pinch zoom
+            const dx = this.touches[0].clientX - this.touches[1].clientX;
+            const dy = this.touches[0].clientY - this.touches[1].clientY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (this.lastTouchDistance > 0) {
+                const rect = this.canvas.getBoundingClientRect();
+                // Use center point between the two touches as zoom anchor
+                const centerX = (this.touches[0].clientX + this.touches[1].clientX) / 2 - rect.left;
+                const centerY = (this.touches[0].clientY + this.touches[1].clientY) / 2 - rect.top;
+                
+                const scaleFactor = distance / this.lastTouchDistance;
+                const newScale = this.scale * scaleFactor;
+                const used = this.zoomAt(centerX, centerY, newScale);
+                
+                // Update zoom slider
+                const slider = document.getElementById('zoomLevel');
+                const label = document.getElementById('zoomValue');
+                if (slider) slider.value = String(used);
+                if (label) label.textContent = Number(used).toFixed(1);
+            }
+            
+            this.lastTouchDistance = distance;
+        }
+    }
+    
+    handleTouchEnd(e) {
+        e.preventDefault();
+        this.touches = Array.from(e.touches);
+        
+        if (this.touches.length === 0) {
+            // All touches ended
+            this.isDragging = false;
+            this.lastTouchDistance = 0;
+        } else if (this.touches.length === 1) {
+            // One touch remaining - switch to pan mode
+            this.isDragging = true;
+            this.lastMouseX = this.touches[0].clientX;
+            this.lastMouseY = this.touches[0].clientY;
+            this.lastTouchDistance = 0;
+        }
     }
 }
 

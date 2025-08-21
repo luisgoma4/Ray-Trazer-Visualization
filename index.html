@@ -75,10 +75,42 @@
             border-radius: 5px;
             background-color: white;
             cursor: grab;
+            max-width: 100%;
+            height: auto;
+            touch-action: none;
         }
         
         #rayCanvas:active {
             cursor: grabbing;
+        }
+        
+        @media (max-width: 768px) {
+            .controls {
+                padding: 15px;
+            }
+            
+            .control-group {
+                display: block;
+                margin-right: 0;
+                margin-bottom: 15px;
+            }
+            
+            .control-group input[type="range"] {
+                width: 100%;
+                max-width: 200px;
+            }
+            
+            .canvas-container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
         }
         
         .info-panel {
@@ -198,7 +230,7 @@
         </div>
         
         <div class="canvas-container">
-            <canvas id="rayCanvas" width="800" height="800"></canvas>
+            <canvas id="rayCanvas"></canvas>
             <div class="legend">
                 <div class="legend-item">
                     <div class="legend-color" style="background-color: rgba(0, 123, 255, 0.4);"></div>
