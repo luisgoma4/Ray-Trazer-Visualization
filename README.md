@@ -1,4 +1,7 @@
-Ray Tracer Visualization [WEBSITE](https://luisgoma4.github.io/Ray-Trazer-Visualization/)
+#Ray Propagation in Random Medium. Visualization website - Python + HTML + Java
+
+🔗 Project website: [https://luisgoma4.github.io/Ray-Trazer-Visualization/](https://luisgoma4.github.io/Ray-Trazer-Visualization/)
+
 
 An interactive web-based visualization of ray trajectories in random media, built on top of Python ray tracing simulations.
 
