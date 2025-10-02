@@ -1,4 +1,4 @@
-# Ray Propagation in Random Medium. Visualization website - Python + HTML + Java
+# Ray Propagation in Random Media. Visualization website - Python + HTML + Java
 
 🔗 Project website: [https://luisgoma4.github.io/Ray-Trazer-Visualization/](https://luisgoma4.github.io/Ray-Trazer-Visualization/)
 
