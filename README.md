@@ -1,4 +1,4 @@
-Ray Tracer Visualization
+Ray Tracer Visualization [WEBSITE](https://luisgoma4.github.io/Ray-Trazer-Visualization/)
 
 An interactive web-based visualization of ray trajectories in random media, built on top of Python ray tracing simulations.
 
@@ -29,7 +29,7 @@ The underlying Python simulation code is part of an ongoing research project. Fo
 
 Clone the repository and open the visualization locally:
 
-git clone https://github.com/your-username/ray-tracer-visualization.git
+git clone https://github.com/luisgoma4/ray-tracer-visualization.git
 cd ray-tracer-visualization
 
 Open index.html in your browser or serve it with a local development server (e.g., Python’s built-in HTTP server):
@@ -54,4 +54,4 @@ Author(s). (2025). Ray Tracer Visualization [Web-based tool]. Part of ongoing re
 This project is distributed under a restricted license due to its connection with ongoing research.
 The visualization code may be reused for non-commercial academic purposes, but the simulation engine and raw data remain proprietary until the associated research is published.
 
-[README written with the assistance of ChatGPT (OpenAI, 2025).]
+README written with the assistance of ChatGPT (OpenAI, 2025).
